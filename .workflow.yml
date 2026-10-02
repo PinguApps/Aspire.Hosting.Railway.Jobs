@@ -29,9 +29,9 @@ polling:
   interval_ms: 30000
 
 hooks:
-  timeout_ms: 60000
+  timeout_ms: 600000
   after_create: |
-    dotnet restore ./Aspire.Hosting.Railway.Jobs.slnx
+    pwsh -NoProfile -File ./eng/Prepare-RailwayDependency.ps1 && dotnet restore ./Aspire.Hosting.Railway.Jobs.slnx
   before_run: |
     git status --short
   after_run: |
