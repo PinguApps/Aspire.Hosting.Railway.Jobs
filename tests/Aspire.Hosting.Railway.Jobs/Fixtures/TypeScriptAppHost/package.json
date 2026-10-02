@@ -5,7 +5,6 @@
   "scripts": {
     "restore": "aspire restore --non-interactive",
     "start": "aspire start --non-interactive --isolated",
-    "wait:postgres": "aspire wait postgres --status healthy --timeout 120 --non-interactive",
     "stop": "aspire stop --non-interactive",
     "deploy:list": "aspire deploy --non-interactive --list-steps",
     "typecheck": "tsc -p tsconfig.apphost.json --noEmit"
