@@ -52,3 +52,9 @@ The 120-second timeout failed with the explicit completion-deadline error for de
 Cron observation requires a new timestamped success marker after observation starts plus successful stopped/EXITED state. Railway can reuse the same deployment and instance IDs across scheduled runs; a new deployment ID is not assumed.
 
 The real scheduler observation passed at `2026-10-02T01:35:58.270269249Z` for deployment `c7372103-90d6-4533-a741-119ddf366508`, followed by successful stopped/EXITED verification. The complete external-consumer script exited zero after all expected success and failure assertions. These runtime results use core source `ba6ddcab7a0667a5d20aebbbaa71c6f7edbc4ef8`; subsequent reviewed source pins are recorded by the bootstrap helper.
+
+## Reviewed provider source revalidation
+
+The bootstrap now pins reviewed core source `5547a196c626ad018db8d651ac2bbca34314b8d5`. A fresh pinned-source pack, NuGet-backed TypeScript gate and all 30 Jobs contract tests passed again. A separate fresh external consumer using that exact packed core/Jobs combination redeployed finite success with its dependent web, then replayed it with unchanged service IDs. It verified actual successful process exit, immutable image, NEVER restart, 250MB/0.5 CPU and AMS settings; the dependent public web returned HTTP 200 with its expected marker.
+
+Changing the cron runtime binding forced new publication. Both changed activation and replay completed in seconds, independently of the next scheduled executable run. The latest cron deployment is `a1fc8448-f8bb-4931-bcc6-c7c5496daf5d`; repeated finite success is `cda10f3f-6999-4123-9ef7-09aaa9ba14e4`. The earlier full failure/timeout and independent real-scheduler proofs remain applicable; the reviewed provider changes did not alter those job completion contracts.
