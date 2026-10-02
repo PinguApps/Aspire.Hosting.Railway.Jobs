@@ -1,0 +1,15 @@
+{
+  "appHost": { "path": "apphost.mts", "language": "typescript/nodejs" },
+  "sdk": { "version": "13.6.0" },
+  "channel": "stable",
+  "packages": {
+    "PinguApps.Aspire.Hosting.Railway": "1.0.0",
+    "PinguApps.Aspire.Hosting.Railway.Jobs": "../../src/Aspire.Hosting.Railway.Jobs/Aspire.Hosting.Railway.Jobs.csproj"
+  },
+  "Parameters": {
+    "railway-project-id": "fixture-project-id",
+    "railway-environment-id": "fixture-environment-id",
+    "railway-api-token": "fixture-api-token",
+    "site-key": "fixture-site"
+  }
+}
