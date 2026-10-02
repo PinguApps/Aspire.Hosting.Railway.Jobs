@@ -120,8 +120,7 @@ jobs:
         shell: pwsh
         run: |
           if ([string]::IsNullOrWhiteSpace($env:RAILWAY_API_TOKEN) -or [string]::IsNullOrWhiteSpace($env:RAILWAY_PROJECT_ID) -or [string]::IsNullOrWhiteSpace($env:RAILWAY_ENVIRONMENT_ID) -or [string]::IsNullOrWhiteSpace($env:RAILWAY_SITE_KEY)) {
-            Write-Host "Skipping live Railway tests: dedicated environment credentials are missing."
-            exit 0
+            throw "Requested live Railway tests require all dedicated environment credentials."
           }
           dotnet pack src/Aspire.Hosting.Railway.Jobs/Aspire.Hosting.Railway.Jobs.csproj -c Release -p:Version=1.0.0 -o artifacts/railway-dependencies
           if ($LASTEXITCODE -ne 0) { throw "Live package failed." }
