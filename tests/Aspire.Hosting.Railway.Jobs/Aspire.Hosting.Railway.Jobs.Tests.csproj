@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Aspire.Hosting.Railway.Jobs\Aspire.Hosting.Railway.Jobs.csproj" />
+    <Compile Include="..\..\samples\AppHostSnippets\RailwayJobsAppHostSnippets.cs" Link="Samples\RailwayJobsAppHostSnippets.cs" />
+    <Compile Include="..\..\samples\AppHostSnippets\Projects\Migration.cs" Link="Samples\Projects\Migration.cs" />
+  </ItemGroup>
+</Project>

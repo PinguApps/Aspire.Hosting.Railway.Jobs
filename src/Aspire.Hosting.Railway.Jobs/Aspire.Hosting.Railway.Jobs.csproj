@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>PinguApps.Aspire.Hosting.Railway.Jobs</PackageId>
+    <AssemblyName>PinguApps.Aspire.Hosting.Railway.Jobs</AssemblyName>
+    <Description>Finite release jobs and scheduled container jobs for Aspire Railway deployments.</Description>
+    <EnableAspireIntegrationAnalyzers>true</EnableAspireIntegrationAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting" />
+    <PackageReference Include="PinguApps.Aspire.Hosting.Railway" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>
