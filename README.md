@@ -1,5 +1,7 @@
 # PinguApps.Aspire.Hosting.Railway.Jobs
 
+[![PinguApps.Aspire.Hosting.Railway.Jobs version](https://img.shields.io/nuget/v/PinguApps.Aspire.Hosting.Railway.Jobs?style=for-the-badge&label=PinguApps.Aspire.Hosting.Railway.Jobs)](https://www.nuget.org/packages/PinguApps.Aspire.Hosting.Railway.Jobs/) [![PinguApps.Aspire.Hosting.Railway.Jobs downloads](https://img.shields.io/nuget/dt/PinguApps.Aspire.Hosting.Railway.Jobs?style=for-the-badge&label=downloads)](https://www.nuget.org/packages/PinguApps.Aspire.Hosting.Railway.Jobs/)
+
 Publish existing Aspire projects and containers as finite release jobs or scheduled Railway jobs. Normal local Aspire behavior stays unchanged. Create target/deployment parameters and attach publishers only inside `IsPublishMode`, so local runs require no control-plane credentials. This package uses the shared `PinguApps.Aspire.Hosting.Railway` target for authentication, ownership, immutable image deployment, variables, networking, and provider interaction.
 
 ## Install
