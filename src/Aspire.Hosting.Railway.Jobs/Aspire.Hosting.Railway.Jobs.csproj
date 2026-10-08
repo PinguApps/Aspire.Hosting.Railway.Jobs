@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>PinguApps.Aspire.Hosting.Railway.Jobs</PackageId>
+    <PackageIcon>icon.png</PackageIcon>
     <AssemblyName>PinguApps.Aspire.Hosting.Railway.Jobs</AssemblyName>
     <Description>Finite release jobs and scheduled container jobs for Aspire Railway deployments.</Description>
     <EnableAspireIntegrationAnalyzers>true</EnableAspireIntegrationAnalyzers>
@@ -11,5 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 </Project>
