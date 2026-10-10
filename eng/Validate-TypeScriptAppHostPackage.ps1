@@ -1,7 +1,9 @@
+#requires -Version 7.4
 param(
     [string] $Configuration = "Release",
     [string] $PackageVersion = "9999.0.0",
-    [string] $DependencyFeed
+    [string] $DependencyFeed,
+    [switch] $RequirePublishedDependency
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,33 +18,47 @@ $fixtureSource = Join-Path $repoRoot "tests/Aspire.Hosting.Railway.Jobs/Fixtures
 $artifactsRoot = Join-Path $repoRoot "artifacts/typescript-apphost-package"
 $packageOutput = Join-Path $artifactsRoot "packages"
 $fixtureWork = Join-Path $artifactsRoot "fixture"
-$nugetPackages = Join-Path $artifactsRoot ".nuget-packages"
+$nugetPackages = Join-Path $artifactsRoot (".nuget-packages-" + [guid]::NewGuid().ToString('N'))
 $packageId = "PinguApps.Aspire.Hosting.Railway.Jobs"
 
-if ([string]::IsNullOrWhiteSpace($DependencyFeed)) {
-    $DependencyFeed = & (Join-Path $PSScriptRoot "Prepare-RailwayDependency.ps1") -Configuration $Configuration
+if ($RequirePublishedDependency -and -not [string]::IsNullOrWhiteSpace($DependencyFeed)) {
+    throw "Release publication must use the official NuGet dependency, not a substitute feed."
 }
-$dependencyFeedFullPath = (Resolve-Path $DependencyFeed).Path
+$dependencyFeedFullPath = if ([string]::IsNullOrWhiteSpace($DependencyFeed)) { $null } else { (Resolve-Path $DependencyFeed).Path }
 $allowedArtifacts = [IO.Path]::GetFullPath((Join-Path $repoRoot "artifacts")) + [IO.Path]::DirectorySeparatorChar
 if (-not ([IO.Path]::GetFullPath($artifactsRoot)).StartsWith($allowedArtifacts, [StringComparison]::OrdinalIgnoreCase)) {
     throw "Package gate output must remain inside repository artifacts."
 }
 
-Remove-Item $artifactsRoot -Recurse -Force -ErrorAction SilentlyContinue
+foreach ($output in @($packageOutput, $fixtureWork)) {
+    if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output -Recurse -Force }
+}
 New-Item $packageOutput -ItemType Directory -Force | Out-Null
 New-Item $nugetPackages -ItemType Directory -Force | Out-Null
 
 $restoreConfig = Join-Path $artifactsRoot "NuGet.restore.Config"
-$restoreFeedXml = [Security.SecurityElement]::Escape($dependencyFeedFullPath)
+$dependencySource = if ($dependencyFeedFullPath) {
+    '<add key="railway-dependency" value="' + [Security.SecurityElement]::Escape($dependencyFeedFullPath) + '" />'
+} else { '' }
+$dependencyMapping = if ($dependencyFeedFullPath) {
+    '<packageSource key="railway-dependency"><package pattern="PinguApps.Aspire.Hosting.Railway" /></packageSource>'
+} else { '' }
 @"
 <configuration>
   <packageSources>
     <clear />
-    <add key="railway-dependency" value="$restoreFeedXml" />
+    $dependencySource
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
   </packageSources>
+  <packageSourceMapping>
+    $dependencyMapping
+    <packageSource key="nuget.org"><package pattern="*" /></packageSource>
+  </packageSourceMapping>
 </configuration>
 "@ | Set-Content $restoreConfig
+$previousNuGetPackages = $env:NUGET_PACKAGES
+$env:NUGET_PACKAGES = $nugetPackages
+try {
 dotnet restore $solutionPath --configfile $restoreConfig
 dotnet build $solutionPath -c $Configuration --no-restore -p:ContinuousIntegrationBuild=true
 dotnet pack $solutionPath -c $Configuration --no-build -p:Version=$PackageVersion -o $packageOutput
@@ -69,21 +85,27 @@ Set-Content (Join-Path $packageCachePath "$packageCacheId.$PackageVersion.nupkg.
     source = (Resolve-Path $packageOutput).Path
 } | ConvertTo-Json | Set-Content (Join-Path $packageCachePath ".nupkg.metadata") -Encoding UTF8
 
-# Aspire restores guest-language integrations using its configured channel sources.
-# Seed the unpublished, packed core dependency in this isolated cache, just like the package under test.
+# Inspect the dependency restored into this same fresh cache before exercising the packed consumer.
 [xml]$centralVersions = Get-Content (Join-Path $repoRoot "Directory.Packages.props") -Raw
 $coreVersion = ($centralVersions.Project.ItemGroup.PackageVersion | Where-Object Include -eq "PinguApps.Aspire.Hosting.Railway").Version
 if ($coreVersion -notmatch '^\d+\.\d+\.\d+$') { throw "The core dependency must have an exact stable version." }
 $coreId = "pinguapps.aspire.hosting.railway"
-$coreFile = Join-Path $dependencyFeedFullPath "PinguApps.Aspire.Hosting.Railway.$coreVersion.nupkg"
 $coreCache = Join-Path $nugetPackages "$coreId/$coreVersion"
-New-Item $coreCache -ItemType Directory -Force | Out-Null
-[IO.Compression.ZipFile]::ExtractToDirectory($coreFile, $coreCache)
-Copy-Item $coreFile (Join-Path $coreCache "$coreId.$coreVersion.nupkg")
+$coreFile = Join-Path $coreCache "$coreId.$coreVersion.nupkg"
 $coreHash = [Convert]::ToBase64String([Security.Cryptography.SHA512]::HashData([IO.File]::ReadAllBytes($coreFile)))
-Set-Content (Join-Path $coreCache "$coreId.$coreVersion.nupkg.sha512") $coreHash -Encoding ASCII
-[ordered]@{ version = 2; contentHash = $coreHash; source = $dependencyFeedFullPath } |
-    ConvertTo-Json | Set-Content (Join-Path $coreCache ".nupkg.metadata") -Encoding UTF8
+$coreMetadata = Get-Content (Join-Path $coreCache '.nupkg.metadata') -Raw | ConvertFrom-Json
+if (-not $dependencyFeedFullPath -and $coreMetadata.source -cne 'https://api.nuget.org/v3/index.json') {
+    throw 'The default package gate must restore core from official NuGet.org.'
+}
+$coreAssembly = Join-Path $coreCache "lib/net10.0/PinguApps.Aspire.Hosting.Railway.dll"
+$jobsAssembly = Join-Path $packageCachePath "lib/net10.0/PinguApps.Aspire.Hosting.Railway.Jobs.dll"
+$binding = & (Join-Path $PSScriptRoot 'Assert-RailwayAssemblyBinding.ps1') -JobsAssembly $jobsAssembly -CoreAssembly $coreAssembly
+[ordered]@{ dependencySource = $(if ($dependencyFeedFullPath) { $dependencyFeedFullPath } else { 'https://api.nuget.org/v3/index.json' });
+    dependencyVersion = $coreVersion; dependencySha512 = $coreHash; coreAssembly = $binding;
+    coreAssemblySha256 = (Get-FileHash -LiteralPath $coreAssembly -Algorithm SHA256).Hash;
+    jobsPackageSha256 = (Get-FileHash -LiteralPath $packageFile -Algorithm SHA256).Hash;
+    packageVersion = $PackageVersion } |
+    ConvertTo-Json | Set-Content (Join-Path $artifactsRoot 'dependency-binding.json') -Encoding UTF8
 
 Copy-Item $fixtureSource $fixtureWork -Recurse
 Remove-Item (Join-Path $fixtureWork ".aspire") -Recurse -Force -ErrorAction SilentlyContinue
@@ -97,23 +119,20 @@ $aspireConfig | ConvertTo-Json -Depth 10 | Set-Content $aspireConfigPath -Encodi
 
 $packageOutputFullPath = (Resolve-Path $packageOutput).Path
 $packageOutputXml = [Security.SecurityElement]::Escape($packageOutputFullPath)
-$dependencyFeedXml = [Security.SecurityElement]::Escape($dependencyFeedFullPath)
 @"
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
     <add key="local-package-gate" value="$packageOutputXml" />
-    <add key="railway-dependency" value="$dependencyFeedXml" />
+    $dependencySource
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
   </packageSources>
   <packageSourceMapping>
     <packageSource key="local-package-gate">
       <package pattern="PinguApps.Aspire.Hosting.Railway.Jobs" />
     </packageSource>
-    <packageSource key="railway-dependency">
-      <package pattern="PinguApps.Aspire.Hosting.Railway" />
-    </packageSource>
+    $dependencyMapping
     <packageSource key="nuget.org">
       <package pattern="*" />
     </packageSource>
@@ -123,14 +142,15 @@ $dependencyFeedXml = [Security.SecurityElement]::Escape($dependencyFeedFullPath)
 
 Push-Location $fixtureWork
 try {
-    $previousNuGetPackages = $env:NUGET_PACKAGES
-    $env:NUGET_PACKAGES = $nugetPackages
-
     aspire restore --non-interactive
     npm ci --no-audit --no-fund
     npm run typecheck
     aspire publish --non-interactive --list-steps
     aspire deploy --non-interactive --list-steps
+}
+finally {
+    Pop-Location
+}
 }
 finally {
     if ($null -eq $previousNuGetPackages) {
@@ -139,6 +159,4 @@ finally {
     else {
         $env:NUGET_PACKAGES = $previousNuGetPackages
     }
-
-    Pop-Location
 }

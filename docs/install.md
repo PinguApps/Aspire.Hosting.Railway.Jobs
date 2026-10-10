@@ -14,7 +14,9 @@ The repository copies the existing PinguApps Aspire integration's Central Packag
 
 The optional manual live workflow uses `RAILWAY_API_TOKEN`, `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_ID`, and `RAILWAY_SITE_KEY` for a dedicated test project. Its shared site marker must match, and artifacts remain deployed for inspection. Ordinary PR tests need no Railway credentials.
 
-Before core 1.1.0 is published, `eng/Prepare-RailwayDependency.ps1` restores the exact pinned, public core source commit and packs the centrally declared core version into a separate local dependency feed. CI and the TypeScript package gate use that feed. Publishing pushes only this repository's package and symbols. Repin the bootstrap when accepting a newer core revision; after core 1.1.0 is published, replace the bootstrap with the published dependency. For local core changes, pass an already packed feed through `eng/Validate-TypeScriptAppHostPackage.ps1 -DependencyFeed <feed>`.
+Normal builds and CI restore core from NuGet.org. The packed gate uses a fresh isolated cache for both compilation and the consumer, verifies the packed Jobs reference against that exact core assembly, and records the dependency package SHA-512 in `artifacts/typescript-apphost-package/dependency-binding.json`. Release publication passes `-RequirePublishedDependency`, which rejects any substitute dependency feed; only the validated Jobs package and symbols are published.
+
+For an unpublished core PR only, `eng/Prepare-RailwayDependency.ps1` packs the pinned public core source into a separate feed. Pass that feed explicitly with `eng/Validate-TypeScriptAppHostPackage.ps1 -DependencyFeed <feed>`. This checks integration work without allowing it into NuGet release publication.
 
 Release publication is user-controlled. This change does not publish or merge a package.
 
