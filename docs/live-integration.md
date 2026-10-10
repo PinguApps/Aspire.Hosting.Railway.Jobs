@@ -88,7 +88,7 @@ The shared core transport was also verified separately with long-running source-
 
 After these checks the disposable 10 October project was deleted, its test token revoked and known cached secret parameters removed. The historical deployment IDs above are evidence, not retained live endpoints. External consumer sources and scrubbed logs remain available locally; no credentials are committed.
 
-The bootstrap pins final reviewed core source `2a7af5d88c1a72a2821ddf7ae9fe1cfd3595dfc6`. Its fresh 1.1.0 pack passed all 37 Jobs contract tests with no skips and the isolated NuGet-backed TypeScript gate, including generated source-build DTOs, type checking, and publish/deploy dependency checks. These checks used new package caches to avoid reusing earlier unpublished 1.1.0 builds.
+The bootstrap pins reviewed core source `1292a667c557d344f6eaea57eb0fbaa428653f2d`, including source-build review corrections verified by the core's live harness. Its fresh 1.1.0 pack passed all 37 Jobs contract tests with no skips and the isolated NuGet-backed TypeScript gate, including generated source-build DTOs, type checking, and publish/deploy dependency checks. These checks used new package caches to avoid reusing earlier unpublished 1.1.0 builds; the complete Jobs source/image deployment evidence above remains recorded against the preceding implementation.
 
 ## Final packed verification
 
