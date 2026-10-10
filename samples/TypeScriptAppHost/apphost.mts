@@ -12,6 +12,17 @@ if (await builder.executionContext().isPublishMode()) {
   const siteKey = await builder.addParameter("site-key");
   const target = await builder.addRailwayTarget("railway", projectId, environmentId, apiToken, siteKey);
 
+  let sourceMigration = await builder.addContainer("source-migration", "busybox");
+  sourceMigration = await sourceMigration.publishToRailwayJob(target, {
+    build: { contextPath: ".", dockerfilePath: "Dockerfile", buildArguments: [{ name: "JOB_MESSAGE", value: "migration" }] },
+    timeoutSeconds: 600,
+  });
+  let sourceBackup = await builder.addContainer("source-backup", "busybox");
+  sourceBackup = await sourceBackup.publishToRailwayCronJob(target, "0 2 * * *", {
+    build: { contextPath: ".", dockerfilePath: "Dockerfile" },
+    timeoutSeconds: 600,
+  });
+
   const image = "busybox@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4";
   migration = await migration.publishToRailwayJob(target, {
     serviceName: "migration",
