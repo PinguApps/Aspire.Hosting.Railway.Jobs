@@ -6,17 +6,30 @@ param(
     [string] $TokenPath,
     [string] $AspireCommand = "aspire",
     [string] $PackageVersion = "1.1.0",
+    [switch] $SourceBuild,
+    [string] $RailwayCommand = "railway",
+    [string] $WorkDirectory,
     [int] $CronObservationSeconds = 420
 )
 
 $ErrorActionPreference = "Stop"
-$work = Join-Path ([IO.Path]::GetTempPath()) ("railway-jobs-consumer-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory $work | Out-Null
-New-Item -ItemType Directory (Join-Path $work "Job") | Out-Null
+$work = if ($WorkDirectory) { [IO.Path]::GetFullPath($WorkDirectory) } else { Join-Path ([IO.Path]::GetTempPath()) ("railway-jobs-consumer-" + [guid]::NewGuid().ToString("N")) }
+$repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+if ($work -eq $repoRoot -or $work.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "The live consumer and package cache must remain outside this repository."
+}
+New-Item -ItemType Directory $work -Force | Out-Null
+New-Item -ItemType Directory (Join-Path $work "Job") -Force | Out-Null
 @'
 <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>
 '@ | Set-Content (Join-Path $work "Job/Job.csproj")
 'System.Console.WriteLine("Local development job");' | Set-Content (Join-Path $work "Job/Program.cs")
+if ($SourceBuild) {
+    Copy-Item (Join-Path $PSScriptRoot "SourceBuildJobsFixture/Job/*") (Join-Path $work "Job") -Recurse -Force
+    Copy-Item (Join-Path $PSScriptRoot "SourceBuildJobsFixture/Job/.dockerignore") (Join-Path $work "Job/.dockerignore") -Force
+    New-Item -ItemType Directory (Join-Path $work "Web") -Force | Out-Null
+    Copy-Item (Join-Path $PSScriptRoot "SourceBuildJobsFixture/Web/*") (Join-Path $work "Web") -Recurse -Force
+}
 $feed = (Resolve-Path $PackageFeed).Path
 $feedXml = [Security.SecurityElement]::Escape($feed)
 
@@ -33,7 +46,7 @@ $feedXml = [Security.SecurityElement]::Escape($feed)
 @"
 <Project Sdk="Microsoft.NET.Sdk">
   <Sdk Name="Aspire.AppHost.Sdk" Version="13.6.0" />
-  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsAspireHost>true</IsAspireHost></PropertyGroup>
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsAspireHost>true</IsAspireHost><AspireUseCliBundle>true</AspireUseCliBundle></PropertyGroup>
   <ItemGroup><Compile Remove="Job/**/*.cs" /></ItemGroup>
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.6.0" />
@@ -51,22 +64,31 @@ var target = builder.AddRailwayTarget("railway",
     builder.AddParameter("railway-project-id", Environment.GetEnvironmentVariable("PIN646_PROJECT")!),
     builder.AddParameter("railway-environment-id", Environment.GetEnvironmentVariable("PIN646_ENVIRONMENT")!),
     builder.AddParameter("railway-api-token", Environment.GetEnvironmentVariable("PIN646_TOKEN")!, secret: true),
-    builder.AddParameter("site-key", Environment.GetEnvironmentVariable("PIN646_SITE_KEY")!));
+    builder.AddParameter("site-key", Environment.GetEnvironmentVariable("PIN646_SITE_KEY")!),
+    new RailwayTargetOptionsDto { CliPath = Environment.GetEnvironmentVariable("PIN646_RAILWAY_COMMAND") ?? "railway" });
 const string image = "docker.io/library/busybox@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4";
 string scenario = Environment.GetEnvironmentVariable("PIN646_SCENARIO") ?? "success";
+bool sourceBuild = Environment.GetEnvironmentVariable("PIN646_SOURCE_BUILD") == "true";
+RailwayBuildOptions Build(string name) => new()
+{
+    ContextPath = Path.Combine(builder.AppHostDirectory, name),
+    BuildArguments = [new() { Name = "PROOF_VERSION", Value = "source-build-jobs" }],
+};
 var job = builder.AddProject("job-" + scenario, Path.Combine(builder.AppHostDirectory, "Job", "Job.csproj"))
     .WithEnvironment("PIN646_CAPABILITY", "migration")
+    .WithEnvironment("PIN646_SCENARIO", scenario)
     .PublishToRailwayJob(target, options =>
     {
-        options.Image = image;
+        if (sourceBuild) { options.Build = Build("Job"); }
+        else { options.Image = image; }
         options.ServiceName = "job-" + scenario;
-        options.StartCommand = scenario switch
+        options.StartCommand = sourceBuild ? null : scenario switch
         {
             "failure" => "sh -c 'echo PIN646_JOB_FAILURE; exit 7'",
             "timeout" => "sh -c 'for i in 1 2 3 4 5; do echo PIN646_JOB_LONG_RUNNING; sleep 60; done; exit 0'",
             _ => "sh -c 'echo PIN646_JOB_SUCCESS; sleep 3; exit 0'",
         };
-        options.Timeout = TimeSpan.FromSeconds(scenario == "timeout" ? 120 : 300);
+        options.Timeout = TimeSpan.FromSeconds(scenario == "timeout" ? 120 : sourceBuild ? 600 : 300);
         options.MemoryGB = 0.25;
         options.VCpus = 0.5;
         options.Region = "europe-west4-drams3a";
@@ -77,8 +99,12 @@ builder.AddContainer("web-" + scenario, "busybox", "1.37.0")
     .WithEnvironment("PIN646_ROLE", "dependent-web")
     .PublishToRailway(target, options =>
     {
-        options.Image = image;
-        options.StartCommand = "sh -c 'mkdir -p /www; echo PIN646_JOBS_READY > /www/index.html; httpd -f -p 8080 -h /www'";
+        if (sourceBuild) { options.Build = Build("Web"); }
+        else
+        {
+            options.Image = image;
+            options.StartCommand = "sh -c 'mkdir -p /www; echo PIN646_JOBS_READY > /www/index.html; httpd -f -p 8080 -h /www'";
+        }
         options.DeploymentDependsOn.Add(job.Resource);
         options.Port = 8080;
         options.PublicDomain = true;
@@ -92,12 +118,17 @@ if (scenario == "success")
 {
     builder.AddContainer("scheduled-backup", "busybox", "1.37.0")
         .WithEnvironment("PIN646_CAPABILITY", "backup")
+        .WithEnvironment("PIN646_SCENARIO", "cron")
         .WithEnvironment("PIN646_CRON_PUBLICATION", Environment.GetEnvironmentVariable("PIN646_CRON_PUBLICATION")!)
         .PublishToRailwayCronJob(target, "*/5 * * * *", options =>
         {
-            options.Image = image;
-            options.StartCommand = "sh -c 'sleep 2; echo PIN646_SCHEDULED_SUCCESS; exit 0'";
-            options.Timeout = TimeSpan.FromSeconds(300);
+            if (sourceBuild) { options.Build = Build("Job"); }
+            else
+            {
+                options.Image = image;
+                options.StartCommand = "sh -c 'sleep 2; echo PIN646_SCHEDULED_SUCCESS; exit 0'";
+            }
+            options.Timeout = TimeSpan.FromSeconds(sourceBuild ? 600 : 300);
             options.MemoryGB = 0.25;
             options.VCpus = 0.5;
         });
@@ -113,7 +144,7 @@ builder.Build().Run();
 }
 '@ | Set-Content (Join-Path $work "aspire.config.json")
 
-$names = @("PIN646_PROJECT", "PIN646_ENVIRONMENT", "PIN646_TOKEN", "PIN646_SITE_KEY", "PIN646_SCENARIO", "PIN646_CRON_PUBLICATION", "NUGET_PACKAGES")
+$names = @("PIN646_PROJECT", "PIN646_ENVIRONMENT", "PIN646_TOKEN", "PIN646_SITE_KEY", "PIN646_SCENARIO", "PIN646_CRON_PUBLICATION", "PIN646_SOURCE_BUILD", "PIN646_RAILWAY_COMMAND", "NUGET_PACKAGES")
 $previous = @{}
 foreach ($name in $names) { $previous[$name] = [Environment]::GetEnvironmentVariable($name) }
 
@@ -151,7 +182,9 @@ try {
     [Environment]::SetEnvironmentVariable("PIN646_TOKEN", $token)
     [Environment]::SetEnvironmentVariable("PIN646_SITE_KEY", $SiteKey)
     [Environment]::SetEnvironmentVariable("PIN646_CRON_PUBLICATION", [guid]::NewGuid().ToString("N"))
-    [Environment]::SetEnvironmentVariable("NUGET_PACKAGES", (Join-Path $work ".nuget-packages"))
+    [Environment]::SetEnvironmentVariable("PIN646_SOURCE_BUILD", $SourceBuild.IsPresent.ToString().ToLowerInvariant())
+    [Environment]::SetEnvironmentVariable("PIN646_RAILWAY_COMMAND", $RailwayCommand)
+    [Environment]::SetEnvironmentVariable("NUGET_PACKAGES", (Join-Path $work (".nuget-packages-" + [guid]::NewGuid().ToString("N"))))
 
     Push-Location $work
     try {
@@ -172,9 +205,12 @@ try {
             $jobService = @($services | Where-Object serviceName -eq "job-$scenario")
             if ($jobService.Count -ne 1 -or -not $jobService[0].latestDeployment.id) { throw "Expected exactly one deployed $scenario job." }
             $jobDeployment = Get-TestDeployment $jobService[0].latestDeployment.id
-            if ($jobService[0].restartPolicyType -ne "NEVER" -or $jobService[0].source.image -ne "docker.io/library/busybox@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4") {
+            if ($jobService[0].restartPolicyType -ne "NEVER" -or
+                (-not $SourceBuild -and $jobService[0].source.image -ne "docker.io/library/busybox@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4") -or
+                ($SourceBuild -and $jobService[0].source.image)) {
                 throw "Finite restart/image settings did not round-trip."
             }
+            if ($SourceBuild) { Assert-DeploymentLog $jobDeployment.id "PIN646_SOURCE_BUILD_source-build-jobs" }
             $limits = Invoke-ScopedQuery 'query($s:String!,$e:String!){serviceInstanceLimits(serviceId:$s,environmentId:$e)}' @{ s = $jobService[0].serviceId; e = $EnvironmentId }
             if ($limits.serviceInstanceLimits.containers.cpu -ne 0.5 -or $limits.serviceInstanceLimits.containers.memoryBytes -ne 250000000) {
                 throw "Finite resource limits did not round-trip."

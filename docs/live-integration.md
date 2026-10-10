@@ -43,6 +43,25 @@ Pack both packages into an external feed, then run:
 
 Set `RAILWAY_API_TOKEN` instead of `TokenPath` for the optional workflow. The full verification deploys success twice, expected failure, expected timeout, and observes a later actual scheduler execution. It intentionally leaves artifacts deployed; finite jobs correctly stop after exit. A timeout fails publication without claiming to terminate the remote workload.
 
+## Reproduce Railway-owned source builds
+
+Pack core 1.1.0 and Jobs 1.1.0 into the same external feed, then run the same harness with `-SourceBuild`:
+
+```powershell
+./eng/Test-LiveRailwayDeployment.ps1 `
+  -SourceBuild `
+  -PackageFeed '<external package feed>' `
+  -ProjectId '<dedicated project ID>' `
+  -EnvironmentId '<dedicated environment ID>' `
+  -SiteKey '<matching shared marker>' `
+  -TokenPath '<local scoped-token file>' `
+  -RailwayCommand '<Railway CLI executable>'
+```
+
+The checked-in `eng/SourceBuildJobsFixture` contains a .NET job and simple web Dockerfile. The harness copies only these build inputs into an external consumer, uses an isolated package cache, and runs real `aspire deploy`. It repeats successful finite execution without duplicating services, expects nonzero-exit failure and bounded timeout to block downstream deployment, and observes a new successful UTC cron execution after its observation starts. Build arguments bake an execution marker into the image, proving the uploaded Dockerfile built and ran. Public base images require no GHCR token. Omit `-SourceBuild` to retain the existing immutable-image regression path.
+
+Use a dedicated disposable environment: this test creates/services deployments and leaves them available for inspection. Remove only its recorded owned test services when finished. Timeout publication does not terminate a still-running remote process; inspect it before cleanup or retry.
+
 ## Final packed verification
 
 With the core cron activation fix, a changed cron publication completed from 02:29:53 to 02:30:04 local time (11 seconds), and replay completed in 3 seconds. The publisher accepted scheduled activation rather than waiting for the executable's next scheduled run. The first success deployment was `34e34cad-1eec-40a4-9a7b-d1687207ff3f`; repeated finite execution was `afb9685f-e531-492a-b01b-ae7035f32857`.
