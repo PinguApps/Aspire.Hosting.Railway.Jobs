@@ -108,6 +108,7 @@ public static class RailwayJobsBuilderExtensions
         target.OwnershipMode = source.OwnershipMode;
         target.ExistingServiceId = source.ExistingServiceId;
         target.Image = source.Image;
+        target.Build = source.Build;
         target.StartCommand = source.StartCommand;
         target.Timeout = source.Timeout;
         target.Region = source.Region;

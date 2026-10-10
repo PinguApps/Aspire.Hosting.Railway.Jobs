@@ -2,15 +2,15 @@
 
 [![PinguApps.Aspire.Hosting.Railway.Jobs version](https://img.shields.io/nuget/v/PinguApps.Aspire.Hosting.Railway.Jobs?style=for-the-badge&label=PinguApps.Aspire.Hosting.Railway.Jobs)](https://www.nuget.org/packages/PinguApps.Aspire.Hosting.Railway.Jobs/) [![PinguApps.Aspire.Hosting.Railway.Jobs downloads](https://img.shields.io/nuget/dt/PinguApps.Aspire.Hosting.Railway.Jobs?style=for-the-badge&label=downloads)](https://www.nuget.org/packages/PinguApps.Aspire.Hosting.Railway.Jobs/)
 
-Publish existing Aspire projects and containers as finite release jobs or scheduled Railway jobs. Normal local Aspire behavior stays unchanged. Create target/deployment parameters and attach publishers only inside `IsPublishMode`, so local runs require no control-plane credentials. This package uses the shared `PinguApps.Aspire.Hosting.Railway` target for authentication, ownership, immutable image deployment, variables, networking, and provider interaction.
+Publish existing Aspire projects and containers as finite release jobs or scheduled Railway jobs. Normal local Aspire behavior stays unchanged. Create target/deployment parameters and attach publishers only inside `IsPublishMode`, so local runs require no control-plane credentials. This package uses the shared `PinguApps.Aspire.Hosting.Railway` target for authentication, ownership, immutable image or source-build deployment, variables, networking, and provider interaction.
 
 ## Install
 
 ```shell
-dotnet add package PinguApps.Aspire.Hosting.Railway.Jobs --version 1.0.0
+dotnet add package PinguApps.Aspire.Hosting.Railway.Jobs --version 1.1.0
 ```
 
-Requires .NET 10 and Aspire 13.6.0. Publish `PinguApps.Aspire.Hosting.Railway` 1.0.0 before this dependent package. See [installation and repository setup](docs/install.md).
+Requires .NET 10 and Aspire 13.6.0. Publish `PinguApps.Aspire.Hosting.Railway` 1.1.0 before this dependent package. See [installation and repository setup](docs/install.md).
 
 ## Finite release jobs
 
@@ -50,6 +50,24 @@ Run `aspire deploy`. Railway starts the retained image without rebuilding it. A 
 
 Migrations, seeding, and managed-media publishing use this finite-job form. Explicitly configure deployment dependencies for required release order. `.WaitFor(...)` continues to describe local runtime behavior; it is not a release completion gate. Application code must make repeated executions safe: the publisher reuses the same owned service, but does not provide exactly-once business execution.
 
+## Build jobs inside Railway
+
+Keep `aspire deploy` as the entry point and opt in to Railway-owned builds instead of supplying an image:
+
+```csharp
+migration.PublishToRailwayJob(target, options =>
+{
+    options.Build = new RailwayBuildOptions
+    {
+        ContextPath = "..",
+        DockerfilePath = "src/Migration/Dockerfile",
+    };
+    options.Timeout = TimeSpan.FromMinutes(10);
+});
+```
+
+The deployment machine needs the Railway CLI. The shared core uploads the context and Railway builds and retains the container. Later restarts and cron runs need no GHCR pull token for this workload. The same `Build` setting works for `PublishToRailwayCronJob` and TypeScript `build: { contextPath: "..", dockerfilePath: "src/Backup/Dockerfile" }`. Finite jobs still require successful exit and block dependent services on failure. `Build` and `Image` are mutually exclusive; leaving `Build` unset preserves the existing image-based functionality. See [build configuration](docs/configuration.md#railway-owned-builds).
+
 ## Scheduled jobs
 
 ```csharp
@@ -73,8 +91,8 @@ PostgreSQL backups and enquiry retention/dead-letter cleanup use this scheduled 
 {
   "sdk": { "version": "13.6.0" },
   "packages": {
-    "PinguApps.Aspire.Hosting.Railway": "1.0.0",
-    "PinguApps.Aspire.Hosting.Railway.Jobs": "1.0.0"
+    "PinguApps.Aspire.Hosting.Railway": "1.1.0",
+    "PinguApps.Aspire.Hosting.Railway.Jobs": "1.1.0"
   }
 }
 ```

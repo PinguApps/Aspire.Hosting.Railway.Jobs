@@ -19,6 +19,9 @@ public sealed class RailwayJobOptions
     /// <summary>Gets or sets the retained container image including its immutable SHA-256 digest.</summary>
     public string? Image { get; set; }
 
+    /// <summary>Gets or sets source upload settings for a Railway-owned build instead of a retained image.</summary>
+    public RailwayBuildOptions? Build { get; set; }
+
     /// <summary>Gets or sets the container start command.</summary>
     public string? StartCommand { get; set; }
 
@@ -51,6 +54,7 @@ public sealed class RailwayJobOptions
         target.OwnershipMode = OwnershipMode;
         target.ExistingServiceId = ExistingServiceId;
         target.Image = Image;
+        target.Build = Build;
         target.StartCommand = StartCommand;
         target.RestartPolicy = RailwayRestartPolicy.Never;
         target.RestartPolicyMaxRetries = 0;

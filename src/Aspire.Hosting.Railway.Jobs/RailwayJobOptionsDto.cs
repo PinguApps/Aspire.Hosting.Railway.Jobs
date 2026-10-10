@@ -16,6 +16,9 @@ public sealed class RailwayJobOptionsDto
     /// <summary>Gets or sets the retained container image digest reference.</summary>
     public string? Image { get; set; }
 
+    /// <summary>Gets or sets source upload settings for a Railway-owned build instead of a retained image.</summary>
+    public RailwayBuildOptions? Build { get; set; }
+
     /// <summary>Gets or sets the container start command.</summary>
     public string? StartCommand { get; set; }
 
@@ -39,6 +42,7 @@ public sealed class RailwayJobOptionsDto
             OwnershipMode = OwnershipMode ?? RailwayOwnershipMode.CreateOrAdopt,
             ExistingServiceId = ExistingServiceId,
             Image = Image,
+            Build = Build,
             StartCommand = StartCommand,
             Timeout = TimeSpan.FromSeconds(TimeoutSeconds ?? 600),
             Region = Region,

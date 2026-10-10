@@ -1,6 +1,8 @@
 # Deployment behavior
 
-The jobs package configures the shared Railway publisher rather than maintaining its own GraphQL client or deployment engine. Target validation runs before remote mutations. The core records ownership, reuses the same service, reconciles settings, deploys the exact retained image, and tracks the exact deployment.
+The jobs package configures the shared Railway publisher rather than maintaining its own GraphQL client or deployment engine. Target validation runs before remote mutations. The core records ownership, reuses the same service, reconciles settings, deploys the exact retained image or uploads an explicitly configured Dockerfile build context, and tracks the exact deployment.
+
+Source builds are opt-in through `RailwayJobOptions.Build` (TypeScript `build`). The shared core owns the upload, build, and deployment completion. The finite-job step additionally requires successful process exit; the cron publisher preserves its schedule and no-retry policy. Railway owns the resulting image, so subsequent restarts and cron executions do not depend on deployment-time GitHub credentials.
 
 For finite jobs, the pipeline remains pending while instances are running. Confirmed successful process termination completes the step. Crashed, failed, stopped, or removed execution is not accepted as completed application work. A timeout fails the deployment step. Cancellation and timeout do not guarantee the remote process has stopped; inspect its deployment before retrying.
 

@@ -7,6 +7,24 @@ namespace PinguApps.Aspire.Hosting.Railway.Jobs.Samples;
 
 public static class RailwayJobsAppHostSnippets
 {
+    public static void ConfigureSourceBuild(IDistributedApplicationBuilder builder, IResourceBuilder<RailwayTargetResource> target)
+    {
+        if (!builder.ExecutionContext.IsPublishMode)
+        {
+            return;
+        }
+
+        builder.AddProject<Projects.Migration>("source-migration")
+            .PublishToRailwayJob(target, options =>
+            {
+                options.Build = new() { ContextPath = "..", DockerfilePath = "src/Migration/Dockerfile" };
+                options.Timeout = TimeSpan.FromMinutes(10);
+            });
+
+        builder.AddContainer("source-backup", "busybox")
+            .PublishToRailwayCronJob(target, "0 2 * * *", options => options.Build = new() { ContextPath = "..", DockerfilePath = "src/Backup/Dockerfile" });
+    }
+
     public static void Configure(IDistributedApplicationBuilder builder)
     {
         IResourceBuilder<ContainerResource> migration = builder.AddContainer("migration", "ghcr.io/pinguapps/example-migration");
