@@ -59,11 +59,11 @@ $dependencyMapping = if ($dependencyFeedFullPath) {
 $previousNuGetPackages = $env:NUGET_PACKAGES
 $env:NUGET_PACKAGES = $nugetPackages
 try {
-dotnet restore $solutionPath --configfile $restoreConfig
+dotnet restore $solutionPath --configfile $restoreConfig --disable-build-servers
 if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed." }
-dotnet build $solutionPath -c $Configuration --no-restore --no-incremental -p:ContinuousIntegrationBuild=true
+dotnet build $solutionPath -c $Configuration --no-restore --no-incremental --disable-build-servers -p:ContinuousIntegrationBuild=true
 if ($LASTEXITCODE -ne 0) { throw "dotnet build failed." }
-dotnet pack $solutionPath -c $Configuration --no-build -p:Version=$PackageVersion -o $packageOutput
+dotnet pack $solutionPath -c $Configuration --no-build --disable-build-servers -p:Version=$PackageVersion -o $packageOutput
 if ($LASTEXITCODE -ne 0) { throw "dotnet pack failed." }
 
 $packageFile = Join-Path $packageOutput "$packageId.$PackageVersion.nupkg"
@@ -167,4 +167,11 @@ finally {
     else {
         $env:NUGET_PACKAGES = $previousNuGetPackages
     }
+    $cachePath = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $nugetPackages).Path)
+    if ([IO.Path]::GetDirectoryName($cachePath) -ne [IO.Path]::GetFullPath($artifactsRoot) -or
+        [IO.Path]::GetFileName($cachePath) -notmatch '^\.nuget-packages-[a-f0-9]{32}$') {
+        throw "Package gate cache cleanup escaped its invocation directory."
+    }
+    Remove-Item -LiteralPath $cachePath -Recurse -Force
+    if (Test-Path -LiteralPath $cachePath) { throw "Package gate invocation cache was not removed." }
 }
