@@ -146,10 +146,15 @@ $packageOutputXml = [Security.SecurityElement]::Escape($packageOutputFullPath)
 Push-Location $fixtureWork
 try {
     aspire restore --non-interactive
+    if ($LASTEXITCODE -ne 0) { throw "aspire restore failed." }
     npm ci --no-audit --no-fund
+    if ($LASTEXITCODE -ne 0) { throw "npm ci failed." }
     npm run typecheck
+    if ($LASTEXITCODE -ne 0) { throw "npm typecheck failed." }
     aspire publish --non-interactive --list-steps
+    if ($LASTEXITCODE -ne 0) { throw "aspire publish failed." }
     aspire deploy --non-interactive --list-steps
+    if ($LASTEXITCODE -ne 0) { throw "aspire deploy failed." }
 }
 finally {
     Pop-Location
