@@ -4,4 +4,4 @@ Run `aspire restore --non-interactive`, `npm ci`, `npm run typecheck`, and `aspi
 
 The sample includes both retained-image jobs and opt-in source-built jobs with a local Dockerfile. Railway builds the uploaded context for those jobs; the deployment machine needs the Railway CLI. Replace fixture parameters and build inputs before live deployment.
 
-The package dependency is bootstrapped during development until core 1.1.0 is published; see the repository installation guide.
+The package gate uses the official core NuGet in a fresh cache. An unpublished dependency feed is available only through explicit `-DependencyFeed` for integration PRs; see the repository installation guide.

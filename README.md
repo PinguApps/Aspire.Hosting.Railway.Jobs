@@ -7,7 +7,7 @@ Publish existing Aspire projects and containers as finite release jobs or schedu
 ## Install
 
 ```shell
-dotnet add package PinguApps.Aspire.Hosting.Railway.Jobs --version 1.1.0
+dotnet add package PinguApps.Aspire.Hosting.Railway.Jobs --version 1.1.1
 ```
 
 Requires .NET 10 and Aspire 13.6.0. Publish `PinguApps.Aspire.Hosting.Railway` 1.1.0 before this dependent package. See [installation and repository setup](docs/install.md).
@@ -92,7 +92,7 @@ PostgreSQL backups and enquiry retention/dead-letter cleanup use this scheduled 
   "sdk": { "version": "13.6.0" },
   "packages": {
     "PinguApps.Aspire.Hosting.Railway": "1.1.0",
-    "PinguApps.Aspire.Hosting.Railway.Jobs": "1.1.0"
+    "PinguApps.Aspire.Hosting.Railway.Jobs": "1.1.1"
   }
 }
 ```
@@ -124,9 +124,8 @@ Use `await web.withRailwayDeploymentDependency(migration)` for the TypeScript re
 
 ```shell
 pwsh ./eng/Test-AspireVersionPins.ps1
-pwsh ./eng/Prepare-RailwayDependency.ps1
 dotnet test Aspire.Hosting.Railway.Jobs.slnx -c Release
 pwsh ./eng/Validate-TypeScriptAppHostPackage.ps1
 ```
 
-The package gate packs the real NuGet, restores a TypeScript fixture through that package, generates bindings, checks TypeScript, and lists the publish pipeline without provider credentials. See [live integration evidence](docs/live-integration.md) for real `aspire deploy` validation and retained Railway resources.
+The package gate compiles against the exact published core dependency in a fresh isolated cache, packs Jobs, verifies its core assembly reference, then restores the same package into a TypeScript fixture, generates bindings, checks TypeScript, and lists the publish/deploy pipelines without provider credentials. Release publication requires this published-dependency path. For an unpublished core change only, prepare a feed explicitly with `eng/Prepare-RailwayDependency.ps1` and pass it using `-DependencyFeed <feed>`; substitute dependencies cannot be used for release publication. See [live integration evidence](docs/live-integration.md) for real `aspire deploy` validation and retained Railway resources.

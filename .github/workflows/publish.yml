@@ -53,13 +53,15 @@ jobs:
 
       - name: Validate NuGet-backed TypeScript AppHost fixture
         shell: pwsh
-        run: ./eng/Validate-TypeScriptAppHostPackage.ps1 -PackageVersion "${{ env.PACKAGE_VERSION }}"
+        run: ./eng/Validate-TypeScriptAppHostPackage.ps1 -PackageVersion "${{ env.PACKAGE_VERSION }}" -RequirePublishedDependency
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: packages
-          path: artifacts/typescript-apphost-package/packages/*
+          path: |
+            artifacts/typescript-apphost-package/packages/*
+            artifacts/typescript-apphost-package/dependency-binding.json
 
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1

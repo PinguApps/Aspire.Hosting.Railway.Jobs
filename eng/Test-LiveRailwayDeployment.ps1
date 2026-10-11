@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory)] [string] $SiteKey,
     [string] $TokenPath,
     [string] $AspireCommand = "aspire",
-    [string] $PackageVersion = "1.1.0",
+    [string] $PackageVersion = "1.1.1",
     [switch] $SourceBuild,
     [string] $RailwayCommand = "railway",
     [string] $WorkDirectory,
