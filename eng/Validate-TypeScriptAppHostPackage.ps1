@@ -60,8 +60,11 @@ $previousNuGetPackages = $env:NUGET_PACKAGES
 $env:NUGET_PACKAGES = $nugetPackages
 try {
 dotnet restore $solutionPath --configfile $restoreConfig
-dotnet build $solutionPath -c $Configuration --no-restore -p:ContinuousIntegrationBuild=true
+if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed." }
+dotnet build $solutionPath -c $Configuration --no-restore --no-incremental -p:ContinuousIntegrationBuild=true
+if ($LASTEXITCODE -ne 0) { throw "dotnet build failed." }
 dotnet pack $solutionPath -c $Configuration --no-build -p:Version=$PackageVersion -o $packageOutput
+if ($LASTEXITCODE -ne 0) { throw "dotnet pack failed." }
 
 $packageFile = Join-Path $packageOutput "$packageId.$PackageVersion.nupkg"
 $packageCacheId = $packageId.ToLowerInvariant()
