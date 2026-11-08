@@ -1,6 +1,6 @@
 {
   "appHost": { "path": "apphost.mts", "language": "typescript/nodejs" },
-  "sdk": { "version": "13.6.0" },
+  "sdk": { "version": "13.6.4" },
   "channel": "stable",
   "packages": {
     "PinguApps.Aspire.Hosting.Railway": "1.1.0",
