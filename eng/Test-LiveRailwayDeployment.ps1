@@ -45,11 +45,11 @@ $feedXml = [Security.SecurityElement]::Escape($feed)
 
 @"
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Aspire.AppHost.Sdk" Version="13.6.4" />
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.6.5" />
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsAspireHost>true</IsAspireHost><AspireUseCliBundle>true</AspireUseCliBundle></PropertyGroup>
   <ItemGroup><Compile Remove="Job/**/*.cs" /></ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.6.4" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.6.5" />
     <PackageReference Include="PinguApps.Aspire.Hosting.Railway.Jobs" Version="$PackageVersion" />
   </ItemGroup>
 </Project>
@@ -140,7 +140,7 @@ builder.Build().Run();
 @'
 {
   "appHost": { "path": "Integration.AppHost.csproj" },
-  "sdk": { "version": "13.6.4" }
+  "sdk": { "version": "13.6.5" }
 }
 '@ | Set-Content (Join-Path $work "aspire.config.json")
 
