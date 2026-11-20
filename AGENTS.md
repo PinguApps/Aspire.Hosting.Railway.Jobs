@@ -80,7 +80,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ### Technical Baseline
 - Target framework: `.NET 10`.
-- Target Aspire version: `13.6.5`.
+- Target Aspire version: `17.0.0`.
 - Keep Central Package Management, custom analyzers, pinned GitHub Actions, NuGet OIDC, and packed TypeScript gate aligned with the reference integrations.
 - Keep C# callbacks separate from exported TypeScript DTO methods.
 - Update README, docs, compile-validated samples, and active tests with behavior changes.

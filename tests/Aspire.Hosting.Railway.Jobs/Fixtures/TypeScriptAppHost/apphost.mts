@@ -4,6 +4,8 @@ const builder = await createBuilder();
 let migration = await builder.addContainer("migration", "busybox");
 let web = await builder.addContainer("web", "busybox");
 let backup = await builder.addContainer("backup", "busybox");
+let dotnetMigration = await builder.addDotnetProject("dotnet-migration", "./Fixture.cs");
+let dotnetBackup = await builder.addDotnetProject("dotnet-backup", "./Fixture.cs");
 
 if (await builder.executionContext().isPublishMode()) {
   const projectId = await builder.addParameter("railway-project-id");
@@ -35,6 +37,9 @@ if (await builder.executionContext().isPublishMode()) {
 });
 web = await web.publishToRailway(target, { image, startCommand: "httpd -f -p 8080", port: 8080 });
 web = await web.withRailwayDeploymentDependency(migration);
+dotnetMigration = await dotnetMigration.publishToRailwayJob(target, { image });
+dotnetBackup = await dotnetBackup.publishToRailwayCronJob(target, "0 2 * * *", { image });
+web = await web.withRailwayDeploymentDependency(dotnetMigration);
 backup = await backup.publishToRailwayCronJob(target, "*/5 * * * *", {
   serviceName: "backup",
   image,

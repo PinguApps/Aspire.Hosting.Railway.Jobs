@@ -14,7 +14,7 @@ public static class RailwayJobsAppHostSnippets
             return;
         }
 
-        builder.AddProject<Projects.Migration>("source-migration")
+        builder.AddDotnetProject("source-migration", "../Migration/Migration.csproj")
             .PublishToRailwayJob(target, options =>
             {
                 options.Build = new() { ContextPath = "..", DockerfilePath = "src/Migration/Dockerfile" };

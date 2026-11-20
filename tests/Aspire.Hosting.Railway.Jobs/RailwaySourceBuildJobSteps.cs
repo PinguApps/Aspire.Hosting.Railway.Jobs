@@ -1,4 +1,5 @@
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Dotnet;
 using Reqnroll;
 using Xunit;
 
@@ -15,7 +16,7 @@ public sealed class RailwaySourceBuildJobSteps
         BuildArguments = [new() { Name = "JOB_KIND", Value = "migration" }],
     };
     private IResourceBuilder<ContainerResource>? _container;
-    private IResourceBuilder<ProjectResource>? _project;
+    private IResourceBuilder<DotnetProjectResource>? _project;
     private IResource? _dependency;
 
     private IResource Resource => _container?.Resource ?? (IResource)_project!.Resource;
@@ -24,7 +25,11 @@ public sealed class RailwaySourceBuildJobSteps
     public void GivenLocalContainer() => _container = _app.AddContainer("job", "busybox", "1.37");
 
     [Given("a local project and Dockerfile source build settings")]
-    public void GivenLocalProject() => _project = _app.AddProject<Projects.Migration>("job");
+    public void GivenLocalProject()
+    {
+        string projectPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "eng", "SourceBuildJobsFixture", "Job", "Job.csproj"));
+        _project = _app.AddDotnetProject("job", projectPath);
+    }
 
     [When("the container is published as a C# (.*) job")]
     public void WhenCSharpJobIsPublished(string kind)
@@ -58,11 +63,11 @@ public sealed class RailwaySourceBuildJobSteps
         }
         else if (kind == "finite")
         {
-            _project!.PublishProjectToRailwayJobForTypeScript(target, options);
+            _project!.PublishDotnetProjectToRailwayJobForTypeScript(target, options);
         }
         else
         {
-            _project!.PublishProjectToRailwayCronJobForTypeScript(target, "0 2 * * *", options);
+            _project!.PublishDotnetProjectToRailwayCronJobForTypeScript(target, "0 2 * * *", options);
         }
     }
 
