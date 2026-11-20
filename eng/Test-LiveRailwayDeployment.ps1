@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory)] [string] $SiteKey,
     [string] $TokenPath,
     [string] $AspireCommand = "aspire",
-    [string] $PackageVersion = "1.1.1",
+    [string] $PackageVersion = "9999.0.0",
     [switch] $SourceBuild,
     [string] $RailwayCommand = "railway",
     [string] $WorkDirectory,
@@ -45,11 +45,11 @@ $feedXml = [Security.SecurityElement]::Escape($feed)
 
 @"
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Aspire.AppHost.Sdk" Version="13.6.5" />
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsAspireHost>true</IsAspireHost><AspireUseCliBundle>true</AspireUseCliBundle></PropertyGroup>
-  <ItemGroup><Compile Remove="Job/**/*.cs" /></ItemGroup>
+  <ItemGroup><Compile Remove="Job/**/*.cs;Web/**/*.cs" /></ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.6.5" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="17.0.0" />
+    <PackageReference Include="Aspire.Hosting.Dotnet" Version="17.0.0" />
     <PackageReference Include="PinguApps.Aspire.Hosting.Railway.Jobs" Version="$PackageVersion" />
   </ItemGroup>
 </Project>
@@ -74,7 +74,7 @@ RailwayBuildOptions Build(string name) => new()
     ContextPath = Path.Combine(builder.AppHostDirectory, name),
     BuildArguments = [new() { Name = "PROOF_VERSION", Value = "source-build-jobs" }],
 };
-var job = builder.AddProject("job-" + scenario, Path.Combine(builder.AppHostDirectory, "Job", "Job.csproj"))
+var job = builder.AddDotnetProject("job-" + scenario, Path.Combine(builder.AppHostDirectory, "Job", "Job.csproj"))
     .WithEnvironment("PIN646_CAPABILITY", "migration")
     .WithEnvironment("PIN646_SCENARIO", scenario)
     .PublishToRailwayJob(target, options =>
@@ -140,7 +140,7 @@ builder.Build().Run();
 @'
 {
   "appHost": { "path": "Integration.AppHost.csproj" },
-  "sdk": { "version": "13.6.5" }
+  "sdk": { "version": "17.0.0" }
 }
 '@ | Set-Content (Join-Path $work "aspire.config.json")
 

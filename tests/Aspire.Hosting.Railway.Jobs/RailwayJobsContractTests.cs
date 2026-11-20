@@ -116,7 +116,9 @@ public sealed class RailwayJobsContractTests
     public void OrdinaryDotnetProjectSupportsFinitePublishingWithoutReplacement()
     {
         IDistributedApplicationBuilder app = DistributedApplication.CreateBuilder();
+#pragma warning disable CS0618 // Keep coverage for legacy AppHosts on Aspire 17.
         IResourceBuilder<ProjectResource> project = app.AddProject<Projects.Migration>("migration");
+#pragma warning restore CS0618
         IResourceBuilder<ProjectResource> published = project.PublishToRailwayJob(AddTarget(app), options => options.Timeout = TimeSpan.FromMinutes(2));
         Assert.Same(project, published);
         Assert.IsType<ProjectResource>(published.Resource);

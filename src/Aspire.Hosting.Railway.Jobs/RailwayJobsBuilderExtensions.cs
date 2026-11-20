@@ -1,4 +1,5 @@
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Dotnet;
 
 namespace Aspire.Hosting.Railway.Jobs;
 
@@ -97,6 +98,31 @@ public static class RailwayJobsBuilderExtensions
     /// <returns>The same resource builder.</returns>
     [AspireExport("pinguapps.railway.jobs.project.publishToRailwayCronJob", MethodName = "publishToRailwayCronJob")]
     public static IResourceBuilder<ProjectResource> PublishProjectToRailwayCronJobForTypeScript(this IResourceBuilder<ProjectResource> builder, IResourceBuilder<RailwayTargetResource> target, string schedule, RailwayJobOptionsDto? options = null)
+    {
+        RailwayJobOptions settings = (options ?? new()).ToOptions();
+        return builder.PublishToRailwayCronJob(target, schedule, destination => CopyOptions(settings, destination));
+    }
+
+    /// <summary>Publishes a finite path-based .NET project from a TypeScript AppHost.</summary>
+    /// <param name="builder">The existing project.</param>
+    /// <param name="target">The shared Railway target.</param>
+    /// <param name="options">Optional transport-safe job settings.</param>
+    /// <returns>The same resource builder.</returns>
+    [AspireExport("pinguapps.railway.jobs.dotnetProject.publishToRailwayJob", MethodName = "publishToRailwayJob")]
+    public static IResourceBuilder<DotnetProjectResource> PublishDotnetProjectToRailwayJobForTypeScript(this IResourceBuilder<DotnetProjectResource> builder, IResourceBuilder<RailwayTargetResource> target, RailwayJobOptionsDto? options = null)
+    {
+        RailwayJobOptions settings = (options ?? new()).ToOptions();
+        return builder.PublishToRailwayJob(target, destination => CopyOptions(settings, destination));
+    }
+
+    /// <summary>Publishes a scheduled path-based .NET project from a TypeScript AppHost.</summary>
+    /// <param name="builder">The existing project.</param>
+    /// <param name="target">The shared Railway target.</param>
+    /// <param name="schedule">A five-field UTC cron schedule.</param>
+    /// <param name="options">Optional transport-safe job settings.</param>
+    /// <returns>The same resource builder.</returns>
+    [AspireExport("pinguapps.railway.jobs.dotnetProject.publishToRailwayCronJob", MethodName = "publishToRailwayCronJob")]
+    public static IResourceBuilder<DotnetProjectResource> PublishDotnetProjectToRailwayCronJobForTypeScript(this IResourceBuilder<DotnetProjectResource> builder, IResourceBuilder<RailwayTargetResource> target, string schedule, RailwayJobOptionsDto? options = null)
     {
         RailwayJobOptions settings = (options ?? new()).ToOptions();
         return builder.PublishToRailwayCronJob(target, schedule, destination => CopyOptions(settings, destination));
