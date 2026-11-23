@@ -10,7 +10,7 @@ Publish existing Aspire projects and containers as finite release jobs or schedu
 dotnet add package PinguApps.Aspire.Hosting.Railway.Jobs
 ```
 
-Requires .NET 10, Aspire 17.0.0, and `PinguApps.Aspire.Hosting.Railway` 1.1.5. See [installation and repository setup](docs/install.md).
+Requires .NET 10 or later, Aspire 17.0.0 or later, and `PinguApps.Aspire.Hosting.Railway` 1.1.5 or later. See [installation and repository setup](docs/install.md).
 
 ## Finite release jobs
 
