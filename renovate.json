@@ -48,7 +48,7 @@
         "/^README\\.md$/"
       ],
       "matchStrings": [
-        "Requires \\.NET 10, Aspire (?<currentValue>\\d+\\.\\d+\\.\\d+),"
+        "Requires \\.NET 10 or later, Aspire (?<currentValue>\\d+\\.\\d+\\.\\d+) or later"
       ],
       "datasourceTemplate": "nuget",
       "versioningTemplate": "semver",
@@ -93,17 +93,16 @@
   ],
   "packageRules": [
     {
-      "matchPackageNames": [
-        "Aspire.Cli",
-        "/^Aspire\\.Hosting(?:\\.|$)/"
-      ],
-      "groupName": "aspire monorepo",
-      "groupSlug": "aspire-monorepo"
-    },
-    {
       "description": "Update installed skills as whole managed dependencies.",
       "matchFileNames": [
         "**/.agents/skills/**"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Keep first-party Aspire dependencies on the supported baseline.",
+      "matchPackageNames": [
+        "/^Aspire(?:\\.|$)/i"
       ],
       "enabled": false
     }

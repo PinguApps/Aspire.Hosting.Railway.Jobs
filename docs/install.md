@@ -1,6 +1,6 @@
 # Installation and repository setup
 
-Install `PinguApps.Aspire.Hosting.Railway.Jobs` in the AppHost. Its minimum core dependency is `PinguApps.Aspire.Hosting.Railway` 1.1.5, so publish the core package first.
+Install `PinguApps.Aspire.Hosting.Railway.Jobs` in an AppHost using .NET 10 or later and Aspire 17.0.0 or later. Its minimum core dependency is `PinguApps.Aspire.Hosting.Railway` 1.1.5.
 
 The repository copies the existing PinguApps Aspire integration's Central Package Management, custom analyzers, build policies, pinned workflows, release drafting, label automation, NuGet OIDC login, and packed TypeScript package gate.
 
@@ -17,8 +17,6 @@ The optional manual live workflow uses `RAILWAY_API_TOKEN`, `RAILWAY_PROJECT_ID`
 Normal builds and CI restore core from NuGet.org. The packed gate uses a fresh isolated cache for both compilation and the consumer, verifies the packed Jobs reference against that exact core assembly, and records the dependency package SHA-512 in `artifacts/typescript-apphost-package/dependency-binding.json`. Release publication passes `-RequirePublishedDependency`, which rejects any substitute dependency feed; only the validated Jobs package and symbols are published.
 
 For an unpublished core PR only, `eng/Prepare-RailwayDependency.ps1` packs the pinned public core source into a separate feed. Pass that feed explicitly with `eng/Validate-TypeScriptAppHostPackage.ps1 -DependencyFeed <feed>`. This checks integration work without allowing it into NuGet release publication.
-
-Release publication is user-controlled. This change does not publish or merge a package.
 
 ## Consumer Railway setup
 

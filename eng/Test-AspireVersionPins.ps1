@@ -31,7 +31,7 @@ if (-not $match.Success -or $match.Groups["version"].Value -ne $baseline) { thro
 $readme = Get-Content (Join-Path $repoRoot "README.md") -Raw
 $live = Get-Content (Join-Path $repoRoot "eng/Test-LiveRailwayDeployment.ps1") -Raw
 $pins = @(
-    [regex]::Match($readme, 'Requires \.NET 10, Aspire (?<version>\d+\.\d+\.\d+),'),
+    [regex]::Match($readme, 'Requires \.NET 10 or later, Aspire (?<version>\d+\.\d+\.\d+) or later'),
     [regex]::Match($readme, '"sdk"\s*:\s*\{\s*"version"\s*:\s*"(?<version>[^"]+)"'),
     [regex]::Match($live, '"sdk"\s*:\s*\{\s*"version"\s*:\s*"(?<version>[^"]+)"'),
     [regex]::Match($live, '<PackageReference Include="Aspire\.Hosting\.AppHost" Version="(?<version>[^"]+)"'),
