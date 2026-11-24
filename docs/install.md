@@ -1,6 +1,6 @@
 # Installation and repository setup
 
-Install `PinguApps.Aspire.Hosting.Railway.Jobs` in an AppHost using .NET 10 or later and Aspire 17.0.0 or later. Its minimum core dependency is `PinguApps.Aspire.Hosting.Railway` 1.1.5.
+Install `PinguApps.Aspire.Hosting.Railway.Jobs` in an AppHost using .NET 10 or later and Aspire 17.0.0 or later. Its minimum core dependency is `PinguApps.Aspire.Hosting.Railway` 1.1.6.
 
 The repository copies the existing PinguApps Aspire integration's Central Package Management, custom analyzers, build policies, pinned workflows, release drafting, label automation, NuGet OIDC login, and packed TypeScript package gate.
 
