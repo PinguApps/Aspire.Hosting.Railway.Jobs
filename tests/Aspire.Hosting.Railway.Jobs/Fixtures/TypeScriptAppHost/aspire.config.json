@@ -4,7 +4,7 @@
   "channel": "stable",
   "packages": {
     "Aspire.Hosting.Dotnet": "17.0.0",
-    "PinguApps.Aspire.Hosting.Railway": "1.1.5",
+    "PinguApps.Aspire.Hosting.Railway": "1.1.6",
     "PinguApps.Aspire.Hosting.Railway.Jobs": "../../../../src/Aspire.Hosting.Railway.Jobs/Aspire.Hosting.Railway.Jobs.csproj"
   },
   "Parameters": {
