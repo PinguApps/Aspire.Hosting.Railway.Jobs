@@ -3,7 +3,7 @@
   "sdk": { "version": "17.0.0" },
   "channel": "stable",
   "packages": {
-    "PinguApps.Aspire.Hosting.Railway": "1.1.6",
+    "PinguApps.Aspire.Hosting.Railway": "1.1.7",
     "PinguApps.Aspire.Hosting.Railway.Jobs": "../../src/Aspire.Hosting.Railway.Jobs/Aspire.Hosting.Railway.Jobs.csproj"
   },
   "Parameters": {
